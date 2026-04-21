@@ -1,76 +1,90 @@
-# Emergency Drone Coordination System (Client-Server app)
+<div align="center">
+  <h1>🚁 Emergency Drone Coordination System</h1>
+  <p>A Client-Server architecture based multithreaded simulation for coordinating drones and rescuing survivors.</p>
+</div>
 
-## 1. Design Choices
+<br/>
 
-Bu proje, insansız hava araçları (dronelar) ve kurtarılacak bireyler (survivorlar) arasındaki etkileşimi simüle eden çoklu iş parçacıklı bir sistemdir. Tasarım aşamasında, uygulamanın gerçek zamanlı ve senkronize biçimde çalışabilmesi için aşağıdaki kritik tasarım kararları alınmıştır:
+## 🎯 About the Project
 
-- **2D Grid Tabanlı Harita Modeli:** Harita, map.width ve map.height ile tanımlanan hücrelerden oluşan bir grid yapısıdır ve bu hücreler CELL\_SIZE ile piksellere dönüştürülür. Örneğin, pencere boyutları aşağıdaki şekilde ayarlanır:
-```c
-window\_width = map.width \* CELL\_SIZE;
-window\_height = map.height \* CELL\_SIZE;
-```
-Bu yapı, koordinat bazlı konumlandırmayı kolaylaştırmakta ve hücrelerin görsel temsilini basitleştirmektedir.
+This project is a multithreaded, real-time simulation system designed to manage the interaction between Unmanned Aerial Vehicles (drones) and individuals awaiting rescue (survivors). The system utilizes a robust **Client-Server architecture** communicating over **TCP Sockets**. The server acts as the central command, handling control and data updates, while individual drone clients update and transmit their real-time status.
 
-- **Modüler Kod Organizasyonu:** Projede drone.h, survivor.h, map.h, view.h gibi başlık dosyaları ile fonksiyonlar ayrı ayrı modüllerde organize edilmiştir. Böylece, kodun bakımı ve ilerideki geliştirmeleri kolaylaşmaktadır.
-- **SDL2 Kütüphanesi Kullanımı:** Görselleştirme için platform bağımsız, donanım hızlandırmalı SDL2 tercih edilmiştir. SDL\_Renderer ile render işlemleri GPU hızlandırmalı olarak yapılmakta, bu da yüksek kare hızları ve akıcı animasyon sağlar:
+## ✨ Key Features
 
-renderer = SDL\_CreateRenderer(window, -1, SDL\_RENDERER\_ACCELERATED | SDL\_RENDERER\_PRESENTVSYNC);
+- **2D Grid-Based Mapping:** Simulates environments using a coordinate-based grid mapped to pixels (e.g., `map.width * CELL_SIZE`), allowing for precise positioning.
+- **Client-Server Architecture:** Real-time data exchange between the central control system (Server) and individual drones (Clients) via TCP sockets.
+- **Hardware-Accelerated Rendering:** Uses the **SDL2** library (`SDL_RENDERER_ACCELERATED` | `SDL_RENDERER_PRESENTVSYNC`) for high framerates and fluid visual feedback.
+- **Multithreading & Synchronization:** Highly optimized multithreading using `pthreads`. Employs fine-grained **Mutex Locks** (`pthread_mutex`) to ensure thread-safe operations on dynamic data structures without heavy performance bottlenecks.
+- **Dynamic Data Structures:** Manages drones and survivors using Linked Lists, allowing seamless addition/removal of entities dynamically.
+- **State-Based Visual Feedback:** Drones are color-coded based on their current operational status (`IDLE`, `ON_MISSION`, `DISCONNECTED`) for immediate visual tracking.
 
-- **Dinamik Veri Yapıları:** Dronelar ve survivorlar, bağlantılı listeler (Linked List) üzerinden yönetilir. Bu yapı, nesnelerin dinamik olarak eklenip çıkarılmasına olanak verir. Örneğin, draw\_drones() fonksiyonu drone listesini dolaşarak her birini çizer:
-- 
-```c
-Node \*current = drones->head;
-while (current != NULL) {
-  Drone \*drone = (Drone \*)current->data;
-  // drone çizim işlemi
-  current = current->next;
-}
-```
-- **Duruma Bağlı Renk Kodlama:** Droneların durumu (IDLE, ON\_MISSION, DISCONNECTED) renklerle ayrılarak kullanıcıya hızlı durum algısı sağlar. Bu tasarım, görsel geribildirim ve simülasyonun izlenebilirliği açısından önemlidir.
-- **Socket Tabanlı İletişim:** Proje mimarisinde, dronelar ile merkezi kontrol sistemi arasında iletişimi sağlamak üzere TCP socket’leri kullanılmıştır. Bu yapı, farklı cihazlar arasında gerçek zamanlı veri alışverişini mümkün kılarak simülasyonun gerçekçiliğini artırır. Server-client modeliyle, sunucu (server) tarafı kontrol ve veri güncellemelerini yönetirken, client (drone) tarafları kendi durumlarını güncelleyip sunucuya iletir.
------
-## 2. Synchronization Strategy
+## 📂 Repository Structure
 
-Proje mimarisi, birden çok iş parçacığının ortak veri yapıları üzerinde eşzamanlı işlem yaptığı senaryolara dayanır. Bu yüzden veri tutarlılığı ve yarış durumlarının önlenmesi kritik önemdedir.
-
-- **Mutex Kilitleri (pthread\_mutex):** Dronelar ve survivorlar, ortak linked list yapıları üzerinde tutulur ve bu yapılara erişim sırasında mutex kilitleri kullanılır:
-
-```c
-pthread\_mutex\_lock(&drones->lock);
-// drone listesi üzerinde işlem
-pthread\_mutex\_unlock(&drones->lock);
+```text
+├── headers/                 # Header files defining structures and function prototypes (e.g., drone.h, map.h)
+├── sistemProje2/            # Project sub-modules and additional resources
+├── tests/                   # Unit tests and test configurations
+├── Makefile                 # Build instructions for compiling the project
+├── server.c                 # Server application handling central coordination and socket connections
+├── drone_client.c           # Client application representing an individual drone
+├── controller.c / ai.c      # Core logic handling drone movement, AI decision-making, and routing
+├── view.c / map.c           # SDL2 rendering logic and 2D grid map management
+├── drone.c / survivor.c     # Entity definitions and state management
+└── list.c / globals.c       # Linked list implementations and global state variables
 ```
 
-- **İnce Taneli Kilitleme:** Her drone nesnesi için ayrı bir mutex bulunmaktadır:
+## 🛠️ Technologies Used
 
-```c
-pthread\_mutex\_lock(&drone->lock);
-//drone verileri üzerinde işlem
-pthread\_mutex\_unlock(&drone->lock);
+- **Programming Language:** C
+- **Graphics Library:** SDL2 (Simple DirectMedia Layer)
+- **Concurrency:** POSIX Threads (pthreads), Mutexes
+- **Networking:** TCP/IP Sockets
+- **Build Tool:** Make
+
+## 🚀 Installation & Setup
+
+### Prerequisites
+Ensure you have a C compiler (`gcc`), `make`, and the `SDL2` development libraries installed on your system.
+For Debian/Ubuntu-based systems:
+```bash
+sudo apt-get update
+sudo apt-get install build-essential libsdl2-dev
 ```
 
-Bu sayede drone listesi ve bireysel drone nesneleri ayrı ayrı korunarak, farklı thread'lerin paralel olarak farklı drone'lara erişimi mümkün olur. Kilitlerin ince taneli tutulması, performansın artırılması için kritik bir stratejidir.
+### Build Instructions
+#### 1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/BahadirKarsli/Emergency-Drone-Coordination-System.git
+   cd Emergency-Drone-Coordination-System
+   ```
 
-- **Kilitlerin Sürekliliği ve Sırası:** Kilitler mümkün olan en kısa sürede alınır ve serbest bırakılır, böylece deadlock ve uzun kilit bekleme süreleri minimize edilir. Kilitlerin belirli bir sırayla alınması, kilit karşılıklı bekleme (deadlock) riskini azaltır.
-- **Grafik ve Veri Ayrımı:** Grafik işlemleri ana thread’de yürütülürken, veri güncellemeleri başka thread’lerce yapılır. Bu ayrım, grafik güncellemeleri ile veri değişikliklerinin çakışmasını önler ve program kararlılığını artırır.
-- **Socket Erişiminde Senkronizasyon:** Server ve client arasında socket üzerinden veri aktarımı sırasında, aynı socket kaynaklarına erişim thread-safe şekilde kontrol edilir. Örneğin, gelen/verilen mesajlar mutex ile korunur veya asenkron I/O teknikleri kullanılır. Böylece veri çakışmaları engellenir ve iletişim güvenilirliği sağlanır.
------
-## 3. Performance Analysis
+#### 2. **Compile the Project:**
+   Use the provided Makefile to compile both the server and client executables.
+   ```bash
+   make
+   ```
 
-Projede performans, gerçek zamanlı simülasyonun gerektirdiği akıcılık ve veri tutarlılığı dengesi gözetilerek optimize edilmiştir.
+## 💻 Usage Instructions
 
-- **Donanım Hızlandırmalı Render:** SDL2’nin SDL\_RENDERER\_ACCELERATED ve SDL\_RENDERER\_PRESENTVSYNC bayraklarıyla oluşturulan renderer, grafik işlemlerinin GPU tarafından hızlandırılmasını ve dikey senkronizasyon ile görüntü yırtılmalarının önlenmesini sağlar. Bu, özellikle 30x20 gibi yüksek hücre sayılarında render performansını artırır.
-- **Paralel İşlem ve Kilitlerin İnceliği:** Kilitlerin ince taneli uygulanması ve kilit sürelerinin kısa tutulması, çoklu thread’lerin birbirini beklemeden çalışmasını sağlar. Bu mimari, CPU kaynaklarının etkin kullanılmasına olanak tanır.
-- **Dinamik Veri Yapısı Performansı:** Bağlantılı listeler dinamik ekleme ve çıkarma işlemlerini kolaylaştırsa da, çok yüksek eleman sayılarında arama ve gezinme işlemleri maliyetli olabilir. Bu durum, yüksek sayıda drone ve survivor varlığında performans darboğazı oluşturabilir.
-- **Socket Haberleşme Gecikmeleri:** TCP socket tabanlı iletişimde, ağ gecikmeleri ve paket iletim süreleri uygulamanın gerçek zamanlılığı üzerinde doğrudan etkilidir. Bu proje kapsamında, iletişim mesajlarının boyutu küçük tutulmuş ve bloklama yapmayan socket işlemleri tercih edilerek bu gecikmeler minimize edilmiştir.
-- **Geliştirme İmkânları:** Performans daha da artırılmak istenirse:
-  - Lock-free veri yapıları veya atomik işlemler kullanılabilir.
-  - Bölgesel güncellemeler (dirty rectangles) ile sadece değişen alanların render edilmesi sağlanabilir.
-  - Daha hızlı arama için hash tablolar veya ağaç yapıları tercih edilebilir.
-  - Socket iletişimi için UDP protokolü veya mesaj sıralaması ve yeniden iletim mekanizmaları geliştirilebilir.
+The simulation requires running the server first, followed by one or multiple drone clients.
 
-Sonuç olarak, mevcut performans gerçek zamanlı simülasyon için yeterli olup, kullanıcı etkileşimlerinde gecikme ve takılma gözlemlenmemektedir.
+### 1. **Start the Server:**
+   Launch the central coordination server. This will initialize the map, spawn survivors, and wait for drone connections.
+   ```bash
+   ./server
+   ```
 
+### 2. **Connect Drone Clients:**
+   Open a new terminal window/tab and start a drone client. You can run multiple clients to simulate a swarm.
+   ```bash
+   ./drone_client
+   ```
 
+### 3. **Simulation Mechanics:**
+   - The visual window will display the grid map.
+   - Drones will automatically communicate with the server to find and travel towards survivors (`ON_MISSION`).
+   - Observe the terminal output for real-time socket communication logs and mutex locking events.
 
+## 🤝 Contributing
 
+Contributions, bug reports, and feature enhancements are welcome. Feel free to open an **Issue** or submit a **Pull Request** to improve the simulation algorithms, add lock-free data structures, or enhance the SDL2 rendering logic.
